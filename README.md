@@ -1,2 +1,3 @@
 # winston-mssql-transport
-A slick and simple MS SQL Server transport for Winston Logger
+
+A slick, simple and practical MS SQL Server transport for Winston Logger.

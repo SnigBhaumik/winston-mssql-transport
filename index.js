@@ -78,13 +78,17 @@ module.exports = class MSSQLTransport extends Transport {
 		this.console = options.console || false;
 
 		this.pool = new mssql.ConnectionPool(connectionConfig);
-		this.pool.connect((err) => {
-			if (err) {
-				if (this.console)	console.error('Couldn\'t connect Log SQL Server. Please check the settings.', err);
-			} else {
-				if (this.console) 	console.log(`Winston log SQL Server connection established.`);
-			}
-		});
+		try {
+			this.pool.connect((err) => {
+				if (err) {
+					if (this.console)	console.error('Couldn\'t connect Log SQL Server. Please check the settings.', err);
+				} else {
+					if (this.console) 	console.log(`Winston log SQL Server connection established.`);
+				}
+			});
+		} catch(ex) {
+			console.error('Couldn\'t initialize Log SQL Server. Please check the settings.', ex);
+		}
 	}
 
 	/**
@@ -108,43 +112,52 @@ module.exports = class MSSQLTransport extends Transport {
 			var req = new mssql.Request(this.pool);
 
 			const log = {};
-			log[this.fields.meta] = JSON.stringify(winstonMeta);
-			log[this.fields.level] = level;
-			log[this.fields.message] = message;
 
-			var columns = '', values = '';
-			for (var prop in log) {
-				columns += `${prop},`;
-				values += `${(log[prop] == null) ? null : (typeof log[prop] === 'number') ? log[prop] : (typeof log[prop] === 'object') ? `'${JSON.stringify(log[prop]).split("'").join("''")}'` : `'${log[prop].split("'").join("''")}'`},`;
+			try {
+				log[this.fields.meta] = JSON.stringify(winstonMeta);
+				log[this.fields.level] = level;
+				log[this.fields.message] = message;
+
+				var columns = '', values = '';
+				for (var prop in log) {
+					columns += `${prop},`;
+					values += `${(log[prop] == null) ? null : (typeof log[prop] === 'number') ? log[prop] : (typeof log[prop] === 'object') ? `'${JSON.stringify(log[prop]).split("'").join("''")}'` : `'${log[prop].split("'").join("''")}'`},`;
+				}
+				let params = {
+					table: this.options.table,
+					columns: columns.slice(0, -1),
+					values: values.slice(0, -1)
+				};
+
+				var qry = 'INSERT INTO {table} ({columns}) VALUES ({values});';
+				qry = format(qry, {
+					table: params.table,
+					columns: params.columns,
+					values: params.values
+				});
+			} catch(ex) {
+				if (this.console)	console.error('Couldn\'t Initialize Log data.', ex);
 			}
-			let params = {
-				table: this.options.table,
-				columns: columns.slice(0, -1),
-				values: values.slice(0, -1)
-			};
-
-			var qry = 'INSERT INTO {table} ({columns}) VALUES ({values});';
-			qry = format(qry, {
-				table: params.table,
-				columns: params.columns,
-				values: params.values
-			});
 
 			req.query(qry, (err, recordset) => {
-				if (err) {
+				try {
+					if (err) {
+						setImmediate(() => {
+							// Do not emit error, otherwise all log posts need to be embedded in try...catch
+							//////this.emit('error', err);
+						});
+						if (this.console)	console.error('unable to post log in SQL Server', err);
+						// Do not throw error, otherwise all log posts need to be embedded in try...catch
+						return callback(null, null);
+					}
 					setImmediate(() => {
-						// Do not emit error, otherwise all log posts need to be embedded in try...catch
-						//////this.emit('error', err);
+						this.emit('logged', info);
 					});
-					if (this.console)	console.error('unable to post log in SQL Server', err);
-					// Do not throw error, otherwise all log posts need to be embedded in try...catch
-					return callback(null, null);
+				} catch(ex) {
+					if (this.console)	console.error('Couldn\'t post log data in the store.', ex);
 				}
-				setImmediate(() => {
-					this.emit('logged', info);
-				});
 
-				callback(null, true);
+				return callback(null, true);
 			});
 		});
 	}
