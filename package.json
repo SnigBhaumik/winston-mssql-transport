@@ -1,0 +1,40 @@
+{
+  "name": "winston-mssql-transport",
+  "version": "1.2.0",
+  "description": "A slick and simple MS SQL Server transport for Winston Logger",
+  "readme": "A slick and simple MS SQL Server transport for Winston Logger",
+  "main": "index.js",
+  "keywords": [
+    "winston",
+    "logger",
+    "transport",
+    "winston transport",
+    "sql server",
+    "ms sql server",
+    "winston sql server",
+    "winston sql server transport",
+    "winston logger sql server transport"
+  ],
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": {
+    "name": "Snig Bhaumik",
+    "email": "snigbb@hotmail.com",
+    "url": "https://iainnovates.com"
+  },
+  "license": "MIT",
+  "dependencies": {
+    "mssql": "^5.1.0",
+    "string-template": "^1.0.0",
+    "winston": "^3.2.1"
+  },
+  "_npmUser": {
+    "name": "snigbb",
+    "email": "snigbb@hotmail.com"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/SnigBhaumik/winston-mssql-transport.git"
+  }
+}
