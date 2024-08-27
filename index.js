@@ -19,7 +19,22 @@
 
 const Transport = require('winston-transport');
 const mssql = require('mssql');
-const format = require('string-template');
+const moment = require('moment');
+
+moment.suppressDeprecationWarnings = true;
+
+const DEFAULTS = {
+	encrypt: false,
+	pool: {
+		max: 10,
+		min: 0,
+		idleTimeoutMillis: 30000
+	},
+
+	limit: 100,
+	order: 'DESC',
+	fields: [ 'message', 'meta' ]
+};
 
 /**
  * @constructor
@@ -46,33 +61,27 @@ module.exports = class MSSQLTransport extends Transport {
 		if (!options.database) 	{ throw new Error('The database name is required'); }
 		if (!options.table) 	{ throw new Error('The database table is required'); }
 
-		// Check custom table fields on options
-		if (!options.fields) {
-			this.options.fields = {};
-
-			// Use default names
-			this.fields = {
-				level: 'level',
-				meta: 'meta',
-				message: 'message',
-				timestamp: 'timestamp'
-			}
-
-		} else {
-			// Use custom table field names
-			this.fields = {
-				level: this.options.fields.level,
-				meta: this.options.fields.meta,
-				message: this.options.fields.message,
-				timestamp: this.options.fields.timestamp
-			}
+		this.fields = {
+			level: 'level',
+			meta: 'meta',
+			message: 'message',
+			timestamp: 'timestamp'
 		}
 
 		const connectionConfig = {
 			server: options.server,
 			user: options.user,
 			password: options.password,
-			database: options.database
+			database: options.database,
+            parseJSON: true,
+            options: {
+                encrypt: DEFAULTS.encrypt
+            },
+            pool: {
+                max: options.pool && options.pool.max ? options.pool.max : DEFAULTS.pool.max,
+                min: options.pool && options.pool.min ? options.pool.min : DEFAULTS.pool.min,
+                idleTimeoutMillis: options.pool && options.pool.idleTimeoutMillis ? options.pool.idleTimeoutMillis : DEFAULTS.pool.idleTimeoutMillis
+            }
 		};
 
 		this.console = options.console || false;
@@ -95,12 +104,11 @@ module.exports = class MSSQLTransport extends Transport {
 	 * function log (info, callback)
 	 * {level, msg, [meta]} = info
 	 * @level {string} Winston standard Level at which to log the message.
-	 * @msg {string} Message to log
-	 * @meta {Object} **Optional** Additional metadata to attach
+	 * @msg {string} Message to log.
+	 * @meta {Object} **Optional** Additional metadata to attach.
 	 * @callback {function} Continuation to respond to when complete.
 	 * Core logging method exposed to Winston. Metadata is optional.
 	 */
-
 	log(info, callback) {
 		const { level, message, ...winstonMeta } = info;
 
@@ -109,8 +117,7 @@ module.exports = class MSSQLTransport extends Transport {
 				callback = () => { };
 			}
 
-			var req = new mssql.Request(this.pool);
-
+			let req = new mssql.Request(this.pool), qry;
 			const log = {};
 
 			try {
@@ -129,18 +136,13 @@ module.exports = class MSSQLTransport extends Transport {
 					values: values.slice(0, -1)
 				};
 
-				var qry = 'INSERT INTO {table} ({columns}) VALUES ({values});';
-				qry = format(qry, {
-					table: params.table,
-					columns: params.columns,
-					values: params.values
-				});
+				qry = `INSERT INTO ${params.table} (${params.columns}) VALUES (${params.values});`;
 			} catch(ex) {
 				if (this.console)	console.error('Couldn\'t Initialize Log data.', ex);
 			}
 
-			req.query(qry, (err, recordset) => {
-				try {
+			try {
+				req.query(qry, (err, recordset) => {
 					if (err) {
 						setImmediate(() => {
 							// Do not emit error, otherwise all log posts need to be embedded in try...catch
@@ -153,12 +155,78 @@ module.exports = class MSSQLTransport extends Transport {
 					setImmediate(() => {
 						this.emit('logged', info);
 					});
-				} catch(ex) {
-					if (this.console)	console.error('Couldn\'t post log data in the store.', ex);
-				}
+				});
+			} catch(ex) {
+				if (this.console)	console.error('Couldn\'t post log data in the store.', ex);
+			}
+			callback(null, true);
+		});
+	}
 
-				return callback(null, true);
-			});
+	/**
+	 * function query (options, callback)
+	 * {from, until, [limit], [start], [order], [fields]} = options
+	 * @from {date} From date.
+	 * @until {date} To date.
+	 * @limit {number} **Optional** Number of log entries to be returned.
+	 * @order {string} **Optional** asc or desc.
+	 * @fields {Array} **Optional** Which columns to be returned.
+	 * @callback {function} Continuation to respond to when complete.
+	 * Query method exposed to Winston.
+	 */
+	query(options, callback) {
+		const from = options && options.from ? options.from : null;
+		const until = options && options.until ? options.until : null;
+		const limit = options && options.limit ? options.limit : DEFAULTS.limit;
+		const order = options && options.order && (options.order.toUpperCase() === 'ASC' || options.order.toUpperCase() === 'DESC') ? options.order : DEFAULTS.order;
+		const fields = options && options.fields ? options.fields : DEFAULTS.fields;
+
+		process.nextTick(() => {
+			if (!callback) {
+				callback = () => { };
+			}
+
+			let req = new mssql.Request(this.pool), qry;
+			
+			let flds = fields.map((o) => { return `[${o}]` });
+			let lmt = limit && !isNaN(limit) ? `TOP ${limit}` : '';
+			qry = `SELECT ${lmt} [level], [timestamp], ${flds.join(', ')} FROM ${this.options.table} `;
+
+			let conditions = [];
+			if (from) {
+				if (moment(from).isValid()) {
+					conditions.push(`[timestamp] >= '${from}' `);
+				}
+			}
+			if (until) {
+				if (moment(until).isValid()) {
+					conditions.push(`[timestamp] <= '${until}' `);
+				}
+			}	
+			if (conditions.length) {
+				qry += ' WHERE ' + conditions.join(' AND ');
+			}
+			qry += ` ORDER BY [timestamp] ${order}`;
+
+			if (this.console)	console.debug('to perform log query in SQL Server', qry);
+			try {
+				req.query(qry, (err, recordset) => {
+					if (err) {
+						setImmediate(() => {
+							// Do not emit error, otherwise all log posts need to be embedded in try...catch
+							//////this.emit('error', err);
+						});
+						if (this.console)	console.error('unable to perform log query in SQL Server', err);
+						// Do not throw error, otherwise all log posts need to be embedded in try...catch
+						callback(err, null);
+					} else {
+						callback(null, recordset && recordset.recordset ? recordset.recordset : null);
+					}
+				});
+			} catch(ex) {
+				if (this.console)	console.error('Couldn\'t post log data in the store.', ex);
+				callback(ex, null);
+			}
 		});
 	}
 };
