@@ -1,6 +1,6 @@
 {
   "name": "winston-mssql-transport",
-  "version": "1.3.0",
+  "version": "1.4.0",
   "description": "A slick and simple MS SQL Server transport for Winston Logger",
   "readme": "A slick and simple MS SQL Server transport for Winston Logger",
   "main": "index.js",
