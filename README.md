@@ -106,7 +106,20 @@ In case you want logging status in console.
 
 # Querying Logs
 
-_Coming soon._
+You can query the stored logs as standard winston query format. `options` is optional, default values as mentioned below would be used. This will return SQL server recordset.
+
+    const options = {
+        limit: 10,              // optional, default 100
+        order: 'ASC',           // optional, default DESC
+        from: '2024-04-04',     // optional
+        until: '2024-06-04',    // optional
+        fields: [ 'message', 'meta' ]   // optional, default both `message` and `meta`
+    };
+
+    logger.query(options, (err, recs) => {
+        console.error(err);
+        console.log(recs);
+    });  
 
 
 # License
