@@ -19,7 +19,15 @@
 
 const Transport = require('winston-transport');
 const mssql = require('mssql');
-const format = require('string-template');
+
+const DEFAULTS = {
+	encrypt: false,
+	pool: {
+		max: 10,
+		min: 0,
+		idleTimeoutMillis: 30000
+	}
+};
 
 /**
  * @constructor
@@ -72,7 +80,16 @@ module.exports = class MSSQLTransport extends Transport {
 			server: options.server,
 			user: options.user,
 			password: options.password,
-			database: options.database
+			database: options.database,
+            parseJSON: true,
+            options: {
+                encrypt: DEFAULTS.encrypt
+            },
+            pool: {
+                max: options.max || DEFAULTS.pool.max,
+                min: options.min || DEFAULTS.pool.min,
+                idleTimeoutMillis: options.idleTimeoutMillis || DEFAULTS.pool.idleTimeoutMillis
+            }
 		};
 
 		this.console = options.console || false;
@@ -109,8 +126,7 @@ module.exports = class MSSQLTransport extends Transport {
 				callback = () => { };
 			}
 
-			var req = new mssql.Request(this.pool);
-
+			let req = new mssql.Request(this.pool), qry;
 			const log = {};
 
 			try {
@@ -129,12 +145,7 @@ module.exports = class MSSQLTransport extends Transport {
 					values: values.slice(0, -1)
 				};
 
-				var qry = 'INSERT INTO {table} ({columns}) VALUES ({values});';
-				qry = format(qry, {
-					table: params.table,
-					columns: params.columns,
-					values: params.values
-				});
+				qry = `INSERT INTO ${params.table} (${params.columns}) VALUES (${params.values});`;
 			} catch(ex) {
 				if (this.console)	console.error('Couldn\'t Initialize Log data.', ex);
 			}
