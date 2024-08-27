@@ -29,7 +29,11 @@ const DEFAULTS = {
 		max: 10,
 		min: 0,
 		idleTimeoutMillis: 30000
-	}
+	},
+
+	limit: 100,
+	order: 'DESC',
+	fields: [ 'message', 'meta' ]
 };
 
 /**
@@ -173,9 +177,9 @@ module.exports = class MSSQLTransport extends Transport {
 	query(options, callback) {
 		const from = options && options.from ? options.from : null;
 		const until = options && options.until ? options.until : null;
-		const limit = options && options.limit ? options.limit : null;
-		const order = options && options.order && (options.order.toUpperCase() === 'ASC' || options.order.toUpperCase() === 'DESC') ? options.order : 'DESC';
-		const fields = options && options.fields ? options.fields : [ 'message', 'meta' ];
+		const limit = options && options.limit ? options.limit : DEFAULTS.limit;
+		const order = options && options.order && (options.order.toUpperCase() === 'ASC' || options.order.toUpperCase() === 'DESC') ? options.order : DEFAULTS.order;
+		const fields = options && options.fields ? options.fields : DEFAULTS.fields;
 
 		process.nextTick(() => {
 			if (!callback) {
