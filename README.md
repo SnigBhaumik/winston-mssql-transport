@@ -19,6 +19,34 @@ Thus the need of a simple and supported plug-in for Winston MS SQL Server transp
  * Winston 3.x
  * MS SQL 2018 onwards
 
+# Setup
+
+Before using the transport, the target database and table must be created.
+
+Assuming your log table name is `winston_logs`, here is the DDL statement.
+
+    SET ANSI_NULLS ON
+    GO
+
+    SET QUOTED_IDENTIFIER ON
+    GO
+
+    CREATE TABLE [dbo].[winston_logs](
+        [id] [bigint] IDENTITY(1,1) NOT NULL,
+        [level] [nvarchar](16) NOT NULL,
+        [message] [nvarchar](max) NOT NULL,
+        [meta] [nvarchar](max) NOT NULL,
+        [timestamp] [datetime] NOT NULL,
+    CONSTRAINT [PK_winston_logs] PRIMARY KEY CLUSTERED 
+    (
+        [id] ASC
+    )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+    ) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
+    GO
+
+    ALTER TABLE [dbo].[winston_logs] ADD  CONSTRAINT [DF_winston_logs_timestamp]  DEFAULT (getdate()) FOR [timestamp]
+    GO
+
 
 # Installation
 
