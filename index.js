@@ -86,9 +86,9 @@ module.exports = class MSSQLTransport extends Transport {
                 encrypt: DEFAULTS.encrypt
             },
             pool: {
-                max: options.max || DEFAULTS.pool.max,
-                min: options.min || DEFAULTS.pool.min,
-                idleTimeoutMillis: options.idleTimeoutMillis || DEFAULTS.pool.idleTimeoutMillis
+                max: options.pool && options.pool.max ? options.pool.max : DEFAULTS.pool.max,
+                min: options.pool && options.pool.min ? options.pool.min : DEFAULTS.pool.min,
+                idleTimeoutMillis: options.pool && options.pool.idleTimeoutMillis ? options.pool.idleTimeoutMillis : DEFAULTS.pool.idleTimeoutMillis
             }
 		};
 
@@ -168,7 +168,7 @@ module.exports = class MSSQLTransport extends Transport {
 					if (this.console)	console.error('Couldn\'t post log data in the store.', ex);
 				}
 
-				return callback(null, true);
+				callback(null, true);
 			});
 		});
 	}
