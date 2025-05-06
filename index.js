@@ -21,7 +21,6 @@ const Transport = require('winston-transport');
 const mssql = require('mssql');
 const moment = require('moment');
 
-<<<<<<< .mine
 moment.suppressDeprecationWarnings = true;
 
 const DEFAULTS = {
@@ -38,24 +37,8 @@ const DEFAULTS = {
 	fields: [ 'message', 'meta' ]
 };
 
-=======
-moment.suppressDeprecationWarnings = true;
-
-const DEFAULTS = {
-	encrypt: false,
-	pool: {
-		max: 10,
-		min: 0,
-		idleTimeoutMillis: 30000
-	},
-
-	limit: 100,
-	order: 'DESC',
-	fields: [ 'message', 'meta' ]
-};
 
 
->>>>>>> .theirs
 /**
  * @constructor
  * @param {Object} options      Options for the MSSQL & log plugin
