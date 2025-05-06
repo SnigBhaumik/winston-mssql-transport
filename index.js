@@ -25,6 +25,7 @@ moment.suppressDeprecationWarnings = true;
 
 const DEFAULTS = {
 	encrypt: false,
+	port: 1433,
 	pool: {
 		max: 10,
 		min: 0,
@@ -56,6 +57,7 @@ module.exports = class MSSQLTransport extends Transport {
 
 		// Validation of mandatory options
 		if (!options.server) 	{ throw new Error('The database server is required'); }
+		if (!options.port) 		{ options.port = DEFAULTS.port; }
 		if (!options.user) 		{ throw new Error('The database username is required'); }
 		if (!options.password) 	{ throw new Error('The database password is required'); }
 		if (!options.database) 	{ throw new Error('The database name is required'); }
@@ -70,6 +72,7 @@ module.exports = class MSSQLTransport extends Transport {
 
 		const connectionConfig = {
 			server: options.server,
+			port: options.port,
 			user: options.user,
 			password: options.password,
 			database: options.database,

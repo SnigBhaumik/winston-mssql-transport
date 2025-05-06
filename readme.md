@@ -66,6 +66,7 @@ Assuming your log table name is `winston_logs`, here is the DDL statement.
         user: 'my-db-user-name',
         password: 'my-db-password',
         server: 'my-db-server',
+        port: 'my-db-server-port',
         database: 'my-db-name',	
         table: 'my-table-name',
     };
