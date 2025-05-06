@@ -1,4 +1,133 @@
 # winston-mssql-transport
+<<<<<<< .mine
+
+A slick, simple and practical MS SQL Server transport for Winston Logger.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+=======
 
 A slick, simple and practical MS SQL Server transport for Winston Logger.
 
@@ -66,7 +195,6 @@ Assuming your log table name is `winston_logs`, here is the DDL statement.
         user: 'my-db-user-name',
         password: 'my-db-password',
         server: 'my-db-server',
-        port: 'my-db-server-port',
         database: 'my-db-name',	
         table: 'my-table-name',
     };
@@ -127,3 +255,4 @@ You can query the stored logs as standard winston query format. `options` is opt
 
 [MIT License](http://en.wikipedia.org/wiki/MIT_License).
 
+>>>>>>> .theirs
